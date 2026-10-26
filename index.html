@@ -319,7 +319,7 @@
           $('lock-msg').textContent = 'Senha incorreta. Tente de novo.'; $('senha').select();
         });
       };
-      $('lock-form').addEventListener('submit', function(e){ e.preventDefault(); tenta($('senha').value, $('lembrar').checked); });
+      $('lock').addEventListener('submit', function(e){ e.preventDefault(); tenta($('senha').value, $('lembrar').checked); });
       if(guardada) tenta(guardada, false); else $('senha').focus();
     })
     .catch(function(){ $('sub').textContent=''; $('lock').hidden=true; $('sub').insertAdjacentHTML('afterend','<div class="err">Os dados ainda não estão disponíveis. Tente de novo mais tarde.</div>'); });
