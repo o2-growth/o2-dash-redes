@@ -30,6 +30,10 @@
   .seg button[aria-pressed="true"]{background:var(--green);color:#0A0A0A}
   .seg button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
   .note{font-size:12px;color:var(--subtle);margin-left:auto}
+  .datas{flex-basis:100%;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+  .datas label{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  input[type=date]{background:var(--surface);color:var(--text);border:1px solid var(--border-2);border-radius:8px;font:600 12.5px var(--font);padding:5px 8px;color-scheme:dark}
+  input[type=date]:focus-visible,select:focus-visible{outline:2px solid var(--green);outline-offset:1px}
   h2{font-size:18px;font-weight:800;margin:36px 0 12px;display:flex;align-items:center;gap:10px}
   h2 .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:var(--green);color:#0A0A0A;font-size:13px;font-weight:800}
   .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -92,9 +96,14 @@
       <button aria-pressed="true" data-v="o2">@o2.inc</button><button aria-pressed="false" data-v="pedro">@pedroalbite</button><button aria-pressed="false" data-v="ambas">As duas</button>
     </div>
     <div class="seg" id="f-per" role="group" aria-label="Período">
-      <button aria-pressed="false" data-v="7">7 dias</button><button aria-pressed="true" data-v="30">30 dias</button><button aria-pressed="false" data-v="90">90 dias</button><button aria-pressed="false" data-v="180">6 meses</button><button aria-pressed="false" data-v="ano">Ano</button>
+      <button aria-pressed="false" data-v="7">7 dias</button><button aria-pressed="true" data-v="30">30 dias</button><button aria-pressed="false" data-v="90">90 dias</button><button aria-pressed="false" data-v="180">6 meses</button><button aria-pressed="false" data-v="ano">Ano</button><button aria-pressed="false" data-v="custom">Escolher datas</button>
     </div>
     <span class="note" id="cmp"></span>
+    <div class="datas">
+      <label>Período <input type="date" id="d-de" aria-label="Início do período"> a <input type="date" id="d-ate" aria-label="Fim do período"></label>
+      <label>Comparar com <select id="c-modo" aria-label="Comparar com"><option value="anterior">Período anterior</option><option value="datas">Escolher datas</option><option value="nenhum">Não comparar</option></select></label>
+      <label id="c-datas" hidden><input type="date" id="c-de" aria-label="Início da comparação"> a <input type="date" id="c-ate" aria-label="Fim da comparação"></label>
+    </div>
   </div>
 
   <h2><span class="n">1</span>Resumo do período</h2>
@@ -135,7 +144,7 @@
 
 <script>
 (function(){
-  var state = {conta:'o2', per:30, ord:'total_interactions'};
+  var state = {conta:'o2', per:30, ord:'total_interactions', de:null, ate:null, cmp:'anterior', cde:null, cate:null};
   var D = {};
   var charts = {};
   var NOME = {o2:'@o2.inc', pedro:'@pedroalbite'};
@@ -176,21 +185,35 @@
   function delta(a,b){
     if(b==null || b===0 || a==null) return '<div class="d flat">sem comparação</div>';
     var v = (a-b)/b; var cls = v>0.005?'up':(v<-0.005?'down':'flat'); var seta = v>0.005?'▲':(v<-0.005?'▼':'■');
-    return '<div class="d '+cls+'">'+seta+' '+pct(Math.abs(v),0)+' vs período anterior</div>';
+    return '<div class="d '+cls+'">'+seta+' '+pct(Math.abs(v),0)+' vs comparação</div>';
   }
   function deltaPP(a,b){
     if(a==null||b==null||!isFinite(a)||!isFinite(b)) return '<div class="d flat">sem comparação</div>';
     var v=(a-b)*100; var cls=v>0.05?'up':(v<-0.05?'down':'flat');
-    return '<div class="d '+cls+'">'+(v>=0?'▲ +':'▼ ')+fmt(v,1)+' p.p. vs anterior</div>';
+    return '<div class="d '+cls+'">'+(v>=0?'▲ +':'▼ ')+fmt(v,1)+' p.p. vs comparação</div>';
   }
 
   function render(){
     var todas = diasDisponiveis();
-    var n = state.per==='ano' ? todas.filter(function(d){ return d.slice(0,4)===todas[todas.length-1].slice(0,4); }).length : state.per;
-    var cur = todas.slice(-n), prev = state.per==='ano' ? [] : todas.slice(-2*n, -n);
-    prev = prev.length ? prev : null;
+    var cur;
+    if(state.per==='custom'){
+      cur = todas.filter(function(d){ return (!state.de || d>=state.de) && (!state.ate || d<=state.ate); });
+    } else {
+      var n = state.per==='ano' ? todas.filter(function(d){ return d.slice(0,4)===todas[todas.length-1].slice(0,4); }).length : state.per;
+      cur = todas.slice(-n);
+      if(cur.length){ $('d-de').value = cur[0]; $('d-ate').value = cur[cur.length-1]; }
+    }
+    var prev = null;
+    if(state.cmp==='anterior' && cur.length){
+      var i0 = todas.indexOf(cur[0]); prev = todas.slice(Math.max(0, i0-cur.length), i0);
+    } else if(state.cmp==='datas'){
+      prev = todas.filter(function(d){ return (!state.cde || d>=state.cde) && (!state.cate || d<=state.cate); });
+    }
+    prev = (prev && prev.length) ? prev : null;
     var S = serie(cur), P = prev ? serie(prev) : null;
-    $('cmp').textContent = cur.length ? ('De '+br(cur[0])+' a '+br(cur[cur.length-1])+(P?' · comparado aos '+prev.length+' dias anteriores':'')) : '';
+    var fator = P ? cur.length/prev.length : 1;
+    if(P && fator!==1) P = P.map(function(x){ var y={}; Object.keys(x).forEach(function(k){ y[k] = typeof x[k]==='number' ? x[k]*fator : x[k]; }); return y; });
+    $('cmp').textContent = cur.length ? ('De '+br(cur[0])+' a '+br(cur[cur.length-1])+(P?' · comparado a '+br(prev[0])+' a '+br(prev[prev.length-1])+(fator!==1?', proporcional aos dias':''):(state.cmp==='nenhum'?' · sem comparação':''))) : 'Nenhum dia no período escolhido.';
 
     var org = soma(S,'org_seg')+soma(S,'org_nao'), pago = soma(S,'pago_seg')+soma(S,'pago_nao');
     var orgP = P ? soma(P,'org_seg')+soma(P,'org_nao') : null, pagoP = P ? soma(P,'pago_seg')+soma(P,'pago_nao') : null;
@@ -283,10 +306,16 @@
     $(id).addEventListener('click', function(e){
       var b = e.target.closest('button'); if(!b) return;
       Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
-      state[chave] = (num && b.dataset.v!=='ano') ? Number(b.dataset.v) : b.dataset.v; render();
+      state[chave] = (num && b.dataset.v!=='ano' && b.dataset.v!=='custom') ? Number(b.dataset.v) : b.dataset.v;
+      if(b.dataset.v==='custom'){ state.de=$('d-de').value||null; state.ate=$('d-ate').value||null; $('d-de').focus(); }
+      render();
     });
   }
   liga('f-conta','conta'); liga('f-per','per',true);
+  function marcaDatas(){ Array.prototype.forEach.call($('f-per').querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x.dataset.v==='custom'?'true':'false'); }); }
+  ['d-de','d-ate'].forEach(function(id){ $(id).addEventListener('change', function(){ state.per='custom'; state.de=$('d-de').value||null; state.ate=$('d-ate').value||null; marcaDatas(); render(); }); });
+  $('c-modo').addEventListener('change', function(){ state.cmp=this.value; $('c-datas').hidden = this.value!=='datas'; render(); });
+  ['c-de','c-ate'].forEach(function(id){ $(id).addEventListener('change', function(){ state.cde=$('c-de').value||null; state.cate=$('c-ate').value||null; render(); }); });
   $('ord').addEventListener('change', function(){ state.ord=this.value; render(); });
 
   function abrir(pac, senha){
@@ -301,6 +330,7 @@
     D.hist=d.hist; D.posts=d.posts; D.publico=d.publico;
     $('lock').hidden = true; $('conteudo').hidden = false;
     var ds = Object.keys((D.hist.contas||{}).o2||{}).sort();
+    ['d-de','d-ate','c-de','c-ate'].forEach(function(id){ if(ds.length){ $(id).min=ds[0]; $(id).max=ds[ds.length-1]; } });
     $('sub').textContent = 'Atualizado em '+(D.hist.atualizado||'–')+'. Dados diários de '+(ds.length?br(ds[0])+'/'+ds[0].slice(0,4):'–')+' até ontem.';
     render();
   }
