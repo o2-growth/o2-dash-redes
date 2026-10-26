@@ -155,7 +155,7 @@ def main() -> None:
     args = ap.parse_args()
     hoje = dt.datetime.now(BRT).date()
     ontem = hoje - dt.timedelta(days=1)
-    senha = os.environ.get("DASH_SENHA", "")
+    senha = os.environ.get("DASH_SENHA", "").strip()
     hist = ler("historico.json", None)
     posts_db = ler("posts.json", {})
     publico = ler("publico.json", {})
