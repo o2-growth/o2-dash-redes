@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Painel Redes O2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  /* Coluna única de 1080px; filtros fixos no topo; cartões escuros por bloco */
+  :root{
+    --bg:#0A0A0A; --card:#111111; --surface:#1A1A1A; --border:#1E1E1E; --border-2:#2A2A2A;
+    --text:#FFFFFF; --soft:#DADADA; --muted:#A0A0A0; --subtle:#6E6E6E;
+    --green:#00E85F; --green-soft:rgba(0,232,95,.10); --green-line:rgba(0,232,95,.30);
+    --gray:#8C8C8C; --red:#FF6B6B;
+    --font:'Inter',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+    color-scheme:dark;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.55;padding-block:40px 64px;padding-inline:20px}
+  .wrap{max-width:1080px;margin:0 auto}
+  .tag{display:inline-block;background:var(--green-soft);color:var(--green);border:1px solid var(--green-line);border-radius:999px;padding:4px 14px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+  h1{font-size:28px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:14px;margin-top:6px}
+  .bar{position:sticky;top:0;z-index:5;background:rgba(10,10,10,.92);backdrop-filter:blur(8px);display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:14px 0;margin:18px 0 6px;border-bottom:1px solid var(--border)}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--border-2);border-radius:999px;padding:3px}
+  .seg button{background:none;border:0;color:var(--muted);font:600 13px var(--font);padding:7px 14px;border-radius:999px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--green);color:#0A0A0A}
+  .seg button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  .note{font-size:12px;color:var(--subtle);margin-left:auto}
+  h2{font-size:18px;font-weight:800;margin:36px 0 12px;display:flex;align-items:center;gap:10px}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:var(--green);color:#0A0A0A;font-size:13px;font-weight:800}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;min-width:0}
+  .kpi .l{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  .kpi .v{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:12.5px;margin-top:2px;font-weight:600;font-variant-numeric:tabular-nums}
+  .up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--muted)}
+  .kpi .h{font-size:11.5px;color:var(--subtle);margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;min-width:0}
+  .card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+  .card .c{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  .chart{position:relative;height:240px}
+  .tbl{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+  th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 8px 10px;border-bottom:1px solid var(--border-2);white-space:nowrap}
+  td{padding:9px 8px;border-bottom:1px solid var(--border);color:var(--soft);font-variant-numeric:tabular-nums;vertical-align:top}
+  td.t{color:var(--text);max-width:360px}
+  td.t a{color:var(--text);text-decoration:none} td.t a:hover,td.t a:focus-visible{color:var(--green);text-decoration:underline}
+  td.num,th.num{text-align:right}
+  .chip{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:2px 7px;background:rgba(255,255,255,.08);white-space:nowrap}
+  .chip.o2{background:var(--green-soft);color:var(--green)}
+  .hl{color:var(--green);font-weight:700}
+  select{background:var(--surface);color:var(--text);border:1px solid var(--border-2);border-radius:8px;font:600 12.5px var(--font);padding:6px 10px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .bars div{display:grid;grid-template-columns:110px minmax(0,1fr) 52px;gap:8px;align-items:center;font-size:12.5px;margin-bottom:6px}
+  .bars span.b{height:12px;border-radius:3px;background:var(--green);display:block}
+  .bars .lab{color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bars .val{text-align:right;color:var(--muted)}
+  .foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);color:var(--subtle);font-size:12px}
+  .err{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.3);color:#FFC2C2;border-radius:12px;padding:14px 18px;margin-top:18px}
+  .lock{max-width:440px;margin-top:22px}
+  .lock-row{display:flex;gap:8px;margin-top:6px}
+  .lock-row input{flex:1;min-width:0;background:var(--surface);color:var(--text);border:1px solid var(--border-2);border-radius:10px;padding:10px 12px;font:500 14px var(--font)}
+  .lock-row input:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+  .lock-row button{background:var(--green);color:#0A0A0A;border:0;border-radius:10px;padding:0 18px;font:700 14px var(--font);cursor:pointer}
+  .lembrar{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted);margin-top:12px}
+  .lock-msg{font-size:12.5px;color:var(--red);margin-top:8px;min-height:18px}
+  [hidden]{display:none!important}
+  @media (max-width:820px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .grid2{grid-template-columns:minmax(0,1fr)} .note{margin-left:0} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tag">Painel · Instagram</div>
+  <h1>Redes da O2 e do Pedro</h1>
+  <p class="sub" id="sub">Carregando os dados…</p>
+
+  <form class="card lock" id="lock" autocomplete="on">
+    <h3>Digite a senha do painel</h3>
+    <p class="c">Os dados ficam criptografados. Só quem tem a senha consegue abrir.</p>
+    <div class="lock-row"><input type="password" id="senha" name="password" autocomplete="current-password" aria-label="Senha" required><button type="submit">Abrir</button></div>
+    <label class="lembrar"><input type="checkbox" id="lembrar"> Lembrar neste navegador</label>
+    <p class="lock-msg" id="lock-msg" role="status"></p>
+  </form>
+  <div id="conteudo" hidden>
+  <div class="bar">
+    <div class="seg" id="f-conta" role="group" aria-label="Conta">
+      <button aria-pressed="true" data-v="o2">@o2.inc</button><button aria-pressed="false" data-v="pedro">@pedroalbite</button><button aria-pressed="false" data-v="ambas">As duas</button>
+    </div>
+    <div class="seg" id="f-per" role="group" aria-label="Período">
+      <button aria-pressed="false" data-v="7">7 dias</button><button aria-pressed="true" data-v="30">30 dias</button><button aria-pressed="false" data-v="90">90 dias</button><button aria-pressed="false" data-v="180">6 meses</button><button aria-pressed="false" data-v="ano">Ano</button>
+    </div>
+    <span class="note" id="cmp"></span>
+  </div>
+
+  <h2><span class="n">1</span>Resumo do período</h2>
+  <div class="kpis" id="kpis"></div>
+
+  <h2><span class="n">2</span>Alcance sem anúncio</h2>
+  <div class="grid2">
+    <div class="card"><h3>Pessoas alcançadas por dia, sem anúncio</h3><p class="c">Em verde, quem não segue a conta: o público novo que o conteúdo traz sozinho.</p><div class="chart"><canvas id="ch-org"></canvas></div></div>
+    <div class="card"><h3>Alcance por dia: sem anúncio e por anúncio</h3><p class="c">Mostra o quanto a conta depende do investimento para ser vista.</p><div class="chart"><canvas id="ch-mix"></canvas></div></div>
+  </div>
+
+  <h2><span class="n">3</span>Seguidores, visitas e cliques</h2>
+  <div class="grid2">
+    <div class="card"><h3>Seguidores por dia</h3><p class="c">Quem começou a seguir e quem deixou de seguir.</p><div class="chart"><canvas id="ch-seg"></canvas></div></div>
+    <div class="card"><h3>Visitas ao perfil e cliques no link</h3><p class="c">Visitas contam todas as origens, inclusive anúncio.</p><div class="chart"><canvas id="ch-vis"></canvas></div></div>
+  </div>
+
+  <h2><span class="n">4</span>Melhores conteúdos</h2>
+  <div class="card">
+    <div class="row"><p class="c" style="margin:0" id="posts-c"></p>
+      <label style="font-size:12.5px;color:var(--muted)">Ordenar por <select id="ord" aria-label="Ordenar por">
+        <option value="total_interactions">Interações</option><option value="reach">Alcance</option><option value="guardar">Salvamentos e compartilhamentos</option><option value="taxa">Interações sobre alcance</option>
+      </select></label></div>
+    <div class="tbl"><table><thead><tr><th>#</th><th>Post</th><th>Conta</th><th>Formato</th><th>Data</th><th class="num">Alcance</th><th class="num">Interações</th><th class="num">Salv.</th><th class="num">Compart.</th><th class="num">Taxa</th><th class="num">× mediana</th></tr></thead><tbody id="posts"></tbody></table></div>
+  </div>
+
+  <h2><span class="n">5</span>O que rende por formato</h2>
+  <div class="card"><p class="c">Mediana por post no período.</p>
+    <div class="tbl"><table style="min-width:520px"><thead><tr><th>Formato</th><th class="num">Posts</th><th class="num">Alcance</th><th class="num">Interações</th><th class="num">Salv. + compart.</th><th class="num">Taxa</th></tr></thead><tbody id="fmts"></tbody></table></div>
+  </div>
+
+  <h2><span class="n">6</span>Quem segue</h2>
+  <div class="grid2" id="pub"></div>
+
+  </div>
+  <p class="foot" id="foot">Fonte: API de insights do Instagram (Meta), coletada todo dia de manhã. O alcance do período é a soma do alcance de cada dia, então a mesma pessoa pode contar mais de uma vez.</p>
+</div>
+
+<script>
+(function(){
+  var state = {conta:'o2', per:30, ord:'total_interactions'};
+  var D = {};
+  var charts = {};
+  var NOME = {o2:'@o2.inc', pedro:'@pedroalbite'};
+  var fmt = function(v,d){ return (v==null||isNaN(v)) ? '–' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}); };
+  var pct = function(v,d){ return (v==null||!isFinite(v)) ? '–' : fmt(v*100, d==null?1:d)+'%'; };
+  var css = function(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var $ = function(id){ return document.getElementById(id); };
+
+  function contas(){ return state.conta==='ambas' ? ['o2','pedro'] : [state.conta]; }
+
+  function diasDisponiveis(){
+    var s = {};
+    contas().forEach(function(c){ Object.keys((D.hist.contas||{})[c]||{}).forEach(function(d){ s[d]=1; }); });
+    return Object.keys(s).sort();
+  }
+
+  function serie(datas){
+    return datas.map(function(d){
+      var t = {reach:0,views:0,profile_views:0,website_clicks:0,total_interactions:0,accounts_engaged:0,seguiram:0,deixaram:0,org_seg:0,org_nao:0,pago_seg:0,pago_nao:0};
+      contas().forEach(function(c){
+        var x = ((D.hist.contas||{})[c]||{})[d]; if(!x) return;
+        ['reach','views','profile_views','website_clicks','total_interactions','accounts_engaged','seguiram','deixaram'].forEach(function(k){ t[k]+= (x[k]||0); });
+        var a = x.alcance||{}; ['org_seg','org_nao','pago_seg','pago_nao'].forEach(function(k){ t[k]+= (a[k]||0); });
+      });
+      t.data = d; return t;
+    });
+  }
+  function soma(arr,k){ return arr.reduce(function(s,x){ return s+(x[k]||0); },0); }
+
+  function seguidoresAtuais(){
+    var tot = 0, ok = false;
+    contas().forEach(function(c){
+      var h = (D.hist.seguidores||{})[c]||{}; var ks = Object.keys(h).sort(); if(ks.length){ tot += h[ks[ks.length-1]]||0; ok = true; }
+    });
+    return ok ? tot : null;
+  }
+
+  function delta(a,b){
+    if(b==null || b===0 || a==null) return '<div class="d flat">sem comparação</div>';
+    var v = (a-b)/b; var cls = v>0.005?'up':(v<-0.005?'down':'flat'); var seta = v>0.005?'▲':(v<-0.005?'▼':'■');
+    return '<div class="d '+cls+'">'+seta+' '+pct(Math.abs(v),0)+' vs período anterior</div>';
+  }
+  function deltaPP(a,b){
+    if(a==null||b==null||!isFinite(a)||!isFinite(b)) return '<div class="d flat">sem comparação</div>';
+    var v=(a-b)*100; var cls=v>0.05?'up':(v<-0.05?'down':'flat');
+    return '<div class="d '+cls+'">'+(v>=0?'▲ +':'▼ ')+fmt(v,1)+' p.p. vs anterior</div>';
+  }
+
+  function render(){
+    var todas = diasDisponiveis();
+    var n = state.per==='ano' ? todas.filter(function(d){ return d.slice(0,4)===todas[todas.length-1].slice(0,4); }).length : state.per;
+    var cur = todas.slice(-n), prev = state.per==='ano' ? [] : todas.slice(-2*n, -n);
+    prev = prev.length ? prev : null;
+    var S = serie(cur), P = prev ? serie(prev) : null;
+    $('cmp').textContent = cur.length ? ('De '+br(cur[0])+' a '+br(cur[cur.length-1])+(P?' · comparado aos '+prev.length+' dias anteriores':'')) : '';
+
+    var org = soma(S,'org_seg')+soma(S,'org_nao'), pago = soma(S,'pago_seg')+soma(S,'pago_nao');
+    var orgP = P ? soma(P,'org_seg')+soma(P,'org_nao') : null, pagoP = P ? soma(P,'pago_seg')+soma(P,'pago_nao') : null;
+    var vis = soma(S,'profile_views'), cli = soma(S,'website_clicks');
+    var visP = P?soma(P,'profile_views'):null, cliP = P?soma(P,'website_clicks'):null;
+    var net = soma(S,'seguiram')-soma(S,'deixaram'), netP = P ? soma(P,'seguiram')-soma(P,'deixaram') : null;
+    var seg = seguidoresAtuais();
+    var k = [
+      ['Seguidores hoje', fmt(seg), '<div class="d '+(net>=0?'up':'down')+'">'+(net>=0?'+':'')+fmt(net)+' no período</div>', 'Entraram '+fmt(soma(S,'seguiram'))+', saíram '+fmt(soma(S,'deixaram'))],
+      ['Público novo sem anúncio', fmt(soma(S,'org_nao')), delta(soma(S,'org_nao'), P?soma(P,'org_nao'):null), 'Não seguidores alcançados pelo conteúdo'],
+      ['Alcance sem anúncio', fmt(org), delta(org,orgP), pct(org/((org+pago)||1))+' do alcance total'],
+      ['Alcance por anúncio', fmt(pago), delta(pago,pagoP), 'Pessoas alcançadas pelos anúncios'],
+      ['Visitas ao perfil', fmt(vis), delta(vis,visP), 'Todas as origens'],
+      ['Cliques no link', fmt(cli), delta(cli,cliP), 'Link da bio'],
+      ['Clique sobre visita', pct(vis?cli/vis:null,2), deltaPP(vis?cli/vis:null, (P&&visP)?cliP/visP:null), 'Quantas visitas viram clique'],
+      ['Interações', fmt(soma(S,'total_interactions')), delta(soma(S,'total_interactions'), P?soma(P,'total_interactions'):null), 'Curtidas, comentários, salvos e compartilhamentos']
+    ];
+    $('kpis').innerHTML = k.map(function(x){ return '<div class="kpi"><div class="l">'+x[0]+'</div><div class="v">'+x[1]+'</div>'+x[2]+'<div class="h">'+x[3]+'</div></div>'; }).join('');
+
+    var lab = cur.map(br);
+    desenha('ch-org','bar',lab,[
+      {label:'Não seguidores', data:S.map(function(x){return x.org_nao;}), backgroundColor:css('--green'), stack:'a'},
+      {label:'Seguidores', data:S.map(function(x){return x.org_seg;}), backgroundColor:css('--gray'), stack:'a'}], true);
+    desenha('ch-mix','line',lab,[
+      {label:'Sem anúncio', data:S.map(function(x){return x.org_seg+x.org_nao;}), borderColor:css('--green'), backgroundColor:css('--green'), tension:.25, pointRadius:0},
+      {label:'Por anúncio', data:S.map(function(x){return x.pago_seg+x.pago_nao;}), borderColor:css('--gray'), backgroundColor:css('--gray'), tension:.25, pointRadius:0}]);
+    desenha('ch-seg','bar',lab,[
+      {label:'Começaram a seguir', data:S.map(function(x){return x.seguiram;}), backgroundColor:css('--green')},
+      {label:'Deixaram de seguir', data:S.map(function(x){return -x.deixaram;}), backgroundColor:css('--red')}], true);
+    desenha('ch-vis','line',lab,[
+      {label:'Visitas ao perfil', data:S.map(function(x){return x.profile_views;}), borderColor:css('--gray'), backgroundColor:css('--gray'), tension:.25, pointRadius:0, yAxisID:'y'},
+      {label:'Cliques no link', data:S.map(function(x){return x.website_clicks;}), borderColor:css('--green'), backgroundColor:css('--green'), tension:.25, pointRadius:0, yAxisID:'y1'}], false, true);
+
+    renderPosts(cur);
+    renderPublico();
+  }
+
+  function br(d){ var p=d.split('-'); return p[2]+'/'+p[1]; }
+
+  function desenha(id,tipo,labels,datasets,empilhado,doisEixos){
+    if(charts[id]) charts[id].destroy();
+    var grid = 'rgba(255,255,255,.06)', tick = css('--muted');
+    var scales = {x:{stacked:!!empilhado, grid:{display:false}, ticks:{color:tick, maxTicksLimit:10, font:{size:11}}},
+                  y:{stacked:!!empilhado, grid:{color:grid}, ticks:{color:tick, font:{size:11}, callback:function(v){return fmt(v);}}, beginAtZero:true}};
+    if(doisEixos) scales.y1 = {position:'right', grid:{display:false}, ticks:{color:css('--green'), font:{size:11}}, beginAtZero:true};
+    charts[id] = new Chart($(id), {type:tipo, data:{labels:labels, datasets:datasets},
+      options:{responsive:true, maintainAspectRatio:false, animation:false, interaction:{mode:'index',intersect:false},
+        plugins:{legend:{labels:{color:css('--soft'), boxWidth:10, font:{size:11}}}, tooltip:{callbacks:{label:function(c){ return c.dataset.label+': '+fmt(Math.abs(c.parsed.y)); }}}},
+        scales:scales}});
+  }
+
+  function mediana(a){ if(!a.length) return 0; var s=a.slice().sort(function(x,y){return x-y;}); var m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+
+  function renderPosts(cur){
+    var ini = cur[0] || '0000', fim = cur[cur.length-1] || '9999';
+    var ps = [];
+    contas().forEach(function(c){ (D.posts[c]||[]).forEach(function(p){ var d=p.data.slice(0,10); if(d>=ini && d<=fim) ps.push(Object.assign({conta:c}, p)); }); });
+    ps.forEach(function(p){ p.guardar=(p.saved||0)+(p.shares||0); p.taxa=p.reach?(p.total_interactions||0)/p.reach:0; });
+    var med = mediana(ps.map(function(p){return p.total_interactions||0;}));
+    $('posts-c').textContent = ps.length ? (ps.length+' posts no período. Mediana de '+fmt(med)+' interações por post.') : 'Nenhum post no período.';
+    var o = state.ord;
+    ps.sort(function(a,b){ return (b[o]||0)-(a[o]||0); });
+    $('posts').innerHTML = ps.slice(0,10).map(function(p,i){
+      var d=p.data.slice(0,10);
+      return '<tr><td>'+(i+1)+'</td><td class="t"><a href="'+p.link+'" target="_blank" rel="noopener">'+esc(p.titulo||'(sem legenda)')+'</a></td><td><span class="chip '+(p.conta==='o2'?'o2':'')+'">'+NOME[p.conta]+'</span></td><td>'+p.formato+'</td><td>'+br(d)+'</td><td class="num">'+fmt(p.reach)+'</td><td class="num">'+fmt(p.total_interactions)+'</td><td class="num">'+fmt(p.saved)+'</td><td class="num">'+fmt(p.shares)+'</td><td class="num">'+pct(p.taxa)+'</td><td class="num '+((p.total_interactions||0)>=2*med&&med?'hl':'')+'">'+(med?fmt((p.total_interactions||0)/med,1)+'×':'–')+'</td></tr>';
+    }).join('');
+    var g = {};
+    ps.forEach(function(p){ (g[p.formato]=g[p.formato]||[]).push(p); });
+    $('fmts').innerHTML = Object.keys(g).sort(function(a,b){ return g[b].length-g[a].length; }).map(function(f){
+      var a=g[f]; return '<tr><td>'+f+'</td><td class="num">'+a.length+'</td><td class="num">'+fmt(mediana(a.map(function(p){return p.reach||0;})))+'</td><td class="num">'+fmt(mediana(a.map(function(p){return p.total_interactions||0;})))+'</td><td class="num">'+fmt(mediana(a.map(function(p){return p.guardar;})))+'</td><td class="num">'+pct(mediana(a.map(function(p){return p.taxa;})))+'</td></tr>';
+    }).join('') || '<tr><td colspan="6">Nenhum post no período.</td></tr>';
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function renderPublico(){
+    var cs = contas();
+    $('pub').innerHTML = cs.map(function(c){
+      var p = (D.publico||{})[c]; if(!p) return '';
+      var tot = Object.values(p.age||{}).reduce(function(s,v){return s+v;},0)||1;
+      var idade = Object.keys(p.age||{}).sort().map(function(k){ return [k.replace('-',' a ')+' anos', p.age[k]/tot]; });
+      var gen = p.gender||{}; var gt = (gen.M||0)+(gen.F||0)+(gen.U||0)||1;
+      var cid = Object.keys(p.city||{}).sort(function(a,b){return p.city[b]-p.city[a];}).slice(0,5).map(function(k){ return [k.split(',')[0], p.city[k]/tot]; });
+      var bars = function(arr){ var mx=Math.max.apply(null, arr.map(function(x){return x[1];}))||1; return '<div class="bars">'+arr.map(function(x){ return '<div><span class="lab">'+esc(x[0])+'</span><span><span class="b" style="width:'+(x[1]/mx*100)+'%"></span></span><span class="val">'+pct(x[1],0)+'</span></div>'; }).join('')+'</div>'; };
+      return '<div class="card"><h3>'+NOME[c]+'</h3><p class="c">Retrato de '+br(p.data)+'. Homens '+pct((gen.M||0)/gt,0)+', mulheres '+pct((gen.F||0)/gt,0)+', não informado '+pct((gen.U||0)/gt,0)+'.</p>'+bars(idade)+'<p class="c" style="margin:12px 0 8px">Cidades, % do total</p>'+bars(cid)+'</div>';
+    }).join('');
+  }
+
+  function liga(id, chave, num){
+    $(id).addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+      state[chave] = (num && b.dataset.v!=='ano') ? Number(b.dataset.v) : b.dataset.v; render();
+    });
+  }
+  liga('f-conta','conta'); liga('f-per','per',true);
+  $('ord').addEventListener('change', function(){ state.ord=this.value; render(); });
+
+  function abrir(pac, senha){
+    var b64 = function(x){ return Uint8Array.from(atob(x), function(c){ return c.charCodeAt(0); }); };
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey('raw', enc.encode(senha), 'PBKDF2', false, ['deriveKey'])
+      .then(function(base){ return crypto.subtle.deriveKey({name:'PBKDF2', salt:b64(pac.sal), iterations:pac.iter, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['decrypt']); })
+      .then(function(k){ return crypto.subtle.decrypt({name:'AES-GCM', iv:b64(pac.iv)}, k, b64(pac.dados)); })
+      .then(function(buf){ return JSON.parse(new TextDecoder().decode(buf)); });
+  }
+  function mostrar(d){
+    D.hist=d.hist; D.posts=d.posts; D.publico=d.publico;
+    $('lock').hidden = true; $('conteudo').hidden = false;
+    var ds = Object.keys((D.hist.contas||{}).o2||{}).sort();
+    $('sub').textContent = 'Atualizado em '+(D.hist.atualizado||'–')+'. Dados diários de '+(ds.length?br(ds[0])+'/'+ds[0].slice(0,4):'–')+' até ontem.';
+    render();
+  }
+  var guardada = null;
+  try { guardada = localStorage.getItem('o2dash') || sessionStorage.getItem('o2dash'); } catch(e) {}
+  fetch('data/painel.enc?v='+Date.now()).then(function(r){ if(!r.ok) throw new Error('sem dados'); return r.json(); })
+    .then(function(pac){
+      $('sub').textContent = 'Painel protegido. Digite a senha para ver os dados.';
+      var tenta = function(senha, lembrar){
+        $('lock-msg').textContent = 'Abrindo…';
+        return abrir(pac, senha).then(function(d){
+          try { (lembrar ? localStorage : sessionStorage).setItem('o2dash', senha); } catch(e) {}
+          mostrar(d);
+        }).catch(function(){
+          try { localStorage.removeItem('o2dash'); sessionStorage.removeItem('o2dash'); } catch(e) {}
+          $('lock-msg').textContent = 'Senha incorreta. Tente de novo.'; $('senha').select();
+        });
+      };
+      $('lock-form').addEventListener('submit', function(e){ e.preventDefault(); tenta($('senha').value, $('lembrar').checked); });
+      if(guardada) tenta(guardada, false); else $('senha').focus();
+    })
+    .catch(function(){ $('sub').textContent=''; $('lock').hidden=true; $('sub').insertAdjacentHTML('afterend','<div class="err">Os dados ainda não estão disponíveis. Tente de novo mais tarde.</div>'); });
+})();
+</script>
+</body>
+</html>
